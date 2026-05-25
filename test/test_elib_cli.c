@@ -50,7 +50,7 @@ static const elib_cli_cfg_t default_cfg = {
     .cmd_table_size = 8,
     .saved_input = saved_buf,
     .saved_buf_size = sizeof(saved_buf),
-    .echo = 1,
+    .bit_flags.echo = 1,
 };
 
 /* Command callback tracking */
@@ -115,12 +115,12 @@ static void test_init_deinit(void)
     /* Valid init */
     err = elib_cli_init(&test_ctx, &default_cfg);
     assert(err == ELIB_CLI_OK);
-    assert(test_ctx.initialized == 1);
+    assert(test_ctx.bit_flags.initialized == 1);
     assert(test_ctx.rx_pos == 0);
 
     /* Double op */
     elib_cli_deinit(&test_ctx);
-    assert(test_ctx.initialized == 0);
+    assert(test_ctx.bit_flags.initialized == 0);
 
     err = elib_cli_feed_char(&test_ctx, 'a');
     assert(err == ELIB_CLI_ERR_NOT_INITIALIZED);
@@ -218,7 +218,7 @@ static void test_echo_off(void)
 {
     reset_test();
     elib_cli_cfg_t no_echo_cfg = default_cfg;
-    no_echo_cfg.echo = 0;
+    no_echo_cfg.bit_flags.echo = 0;
 
     elib_cli_init(&test_ctx, &no_echo_cfg);
     elib_cli_register(&test_ctx, "test", NULL, cmd_test);

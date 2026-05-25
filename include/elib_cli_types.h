@@ -40,7 +40,9 @@ typedef struct {
     uint8_t cmd_table_size;
     char *saved_input;
     uint16_t saved_buf_size;
-    int echo;
+    struct {
+        uint8_t echo : 1;
+    } bit_flags;
 } elib_cli_cfg_t;
 
 /* Main context */
@@ -50,9 +52,11 @@ typedef struct {
     uint16_t rx_pos;
     uint16_t saved_len;
     int hist_offset;
-    uint8_t escape_state;
-    uint8_t cr_pending;
-    int initialized;
+    struct {
+        uint8_t escape_state : 2;
+        uint8_t cr_pending : 1;
+        uint8_t initialized : 1;
+    } bit_flags;
 } elib_cli_ctx_t;
 
 #ifdef __cplusplus

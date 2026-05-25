@@ -208,7 +208,7 @@ static void cli_tab_complete(elib_cli_ctx_t *ctx)
         uint16_t name_len = (uint16_t)strlen(name);
         if (name_len < ctx->cfg->rx_buf_size - 2) {
             /* Erase current input and rewrite */
-            if (ctx->cfg->echo) {
+            if (ctx->cfg->bit_flags.echo) {
                 for (uint16_t i = 0; i < pos; i++) {
                     cli_print_raw(ctx, "\b \b");
                 }
@@ -217,7 +217,7 @@ static void cli_tab_complete(elib_cli_ctx_t *ctx)
             rx[name_len] = ' ';
             rx[name_len + 1] = '\0';
             ctx->rx_pos = name_len + 1;
-            if (ctx->cfg->echo) {
+            if (ctx->cfg->bit_flags.echo) {
                 cli_print_raw(ctx, rx);
             }
         }
@@ -233,7 +233,7 @@ static void cli_tab_complete(elib_cli_ctx_t *ctx)
         }
     }
     cli_prompt(ctx);
-    if (ctx->cfg->echo) {
+    if (ctx->cfg->bit_flags.echo) {
         cli_print_raw(ctx, rx);
     }
 }
@@ -242,7 +242,7 @@ static void cli_tab_complete(elib_cli_ctx_t *ctx)
 
 static void cli_clear_line(elib_cli_ctx_t *ctx)
 {
-    if (!ctx->cfg->echo) {
+    if (!ctx->cfg->bit_flags.echo) {
         return;
     }
     for (uint16_t i = 0; i < ctx->rx_pos; i++) {
@@ -281,7 +281,7 @@ static void cli_history_up(elib_cli_ctx_t *ctx)
     uint16_t len = history_copy_to_rx(ctx, new_offset - 1);
     if (len > 0) {
         ctx->rx_pos = len;
-        if (ctx->cfg->echo) {
+        if (ctx->cfg->bit_flags.echo) {
             cli_print_raw(ctx, ctx->cfg->rx_buf);
         }
     }
@@ -308,7 +308,7 @@ static void cli_history_down(elib_cli_ctx_t *ctx)
             memcpy(ctx->cfg->rx_buf, ctx->cfg->saved_input, len);
             ctx->cfg->rx_buf[len] = '\0';
             ctx->rx_pos = len;
-            if (ctx->cfg->echo) {
+            if (ctx->cfg->bit_flags.echo) {
                 cli_print_raw(ctx, ctx->cfg->rx_buf);
             }
         } else {
@@ -320,7 +320,7 @@ static void cli_history_down(elib_cli_ctx_t *ctx)
         uint16_t len = history_copy_to_rx(ctx, new_offset - 1);
         if (len > 0) {
             ctx->rx_pos = len;
-            if (ctx->cfg->echo) {
+            if (ctx->cfg->bit_flags.echo) {
                 cli_print_raw(ctx, ctx->cfg->rx_buf);
             }
         }
@@ -428,7 +428,7 @@ elib_cli_err_t elib_cli_init(elib_cli_ctx_t *ctx, const elib_cli_cfg_t *cfg)
 
     memset(ctx, 0, sizeof(elib_cli_ctx_t));
     ctx->cfg = cfg;
-    ctx->initialized = 1;
+    ctx->bit_flags.initialized = 1;
 
     cfg->rx_buf[0] = '\0';
     if (cfg->history_buf && cfg->history_buf_size > 0) {
@@ -447,7 +447,7 @@ void elib_cli_deinit(elib_cli_ctx_t *ctx)
     if (ctx == NULL) {
         return;
     }
-    ctx->initialized = 0;
+    ctx->bit_flags.initialized = 0;
 }
 
 elib_cli_err_t elib_cli_register(elib_cli_ctx_t *ctx, const char *name,
@@ -456,7 +456,7 @@ elib_cli_err_t elib_cli_register(elib_cli_ctx_t *ctx, const char *name,
     if (ctx == NULL || name == NULL || callback == NULL) {
         return ELIB_CLI_ERR_INVALID_PARAM;
     }
-    if (!ctx->initialized) {
+    if (!ctx->bit_flags.initialized) {
         return ELIB_CLI_ERR_NOT_INITIALIZED;
     }
     if (ctx->cmd_count >= ctx->cfg->cmd_table_size) {
@@ -487,21 +487,21 @@ elib_cli_err_t elib_cli_feed_char(elib_cli_ctx_t *ctx, char ch)
     if (ctx == NULL) {
         return ELIB_CLI_ERR_INVALID_PARAM;
     }
-    if (!ctx->initialized) {
+    if (!ctx->bit_flags.initialized) {
         return ELIB_CLI_ERR_NOT_INITIALIZED;
     }
 
     /* ANSI escape sequence state machine */
-    if (ctx->escape_state == 1) {
+    if (ctx->bit_flags.escape_state == 1) {
         if (ch == '[') {
-            ctx->escape_state = 2;
+            ctx->bit_flags.escape_state = 2;
         } else {
-            ctx->escape_state = 0;
+            ctx->bit_flags.escape_state = 0;
         }
         return ELIB_CLI_OK;
     }
-    if (ctx->escape_state == 2) {
-        ctx->escape_state = 0;
+    if (ctx->bit_flags.escape_state == 2) {
+        ctx->bit_flags.escape_state = 0;
         if (ch == 'A') {
             cli_history_up(ctx);
             return ELIB_CLI_OK;
@@ -524,11 +524,11 @@ elib_cli_err_t elib_cli_feed_char(elib_cli_ctx_t *ctx, char ch)
     }
     if (ctx->cfg->newline == ELIB_CLI_NL_CRLF) {
         if (ch == '\r') {
-            ctx->cr_pending = 1;
+            ctx->bit_flags.cr_pending = 1;
             return ELIB_CLI_OK;
         }
-        if (ctx->cr_pending) {
-            ctx->cr_pending = 0;
+        if (ctx->bit_flags.cr_pending) {
+            ctx->bit_flags.cr_pending = 0;
             if (ch == '\n') {
                 cli_execute(ctx);
                 return ELIB_CLI_OK;
@@ -544,7 +544,7 @@ elib_cli_err_t elib_cli_feed_char(elib_cli_ctx_t *ctx, char ch)
         if (ctx->rx_pos > 0) {
             ctx->rx_pos--;
             ctx->cfg->rx_buf[ctx->rx_pos] = '\0';
-            if (ctx->cfg->echo) {
+            if (ctx->cfg->bit_flags.echo) {
                 cli_print_raw(ctx, "\b \b");
             }
         }
@@ -553,7 +553,7 @@ elib_cli_err_t elib_cli_feed_char(elib_cli_ctx_t *ctx, char ch)
 
     /* ESC - start of ANSI sequence */
     if (ch == 0x1b) {
-        ctx->escape_state = 1;
+        ctx->bit_flags.escape_state = 1;
         return ELIB_CLI_OK;
     }
 
@@ -569,7 +569,7 @@ elib_cli_err_t elib_cli_feed_char(elib_cli_ctx_t *ctx, char ch)
             ctx->cfg->rx_buf[ctx->rx_pos] = ch;
             ctx->rx_pos++;
             ctx->cfg->rx_buf[ctx->rx_pos] = '\0';
-            if (ctx->cfg->echo) {
+            if (ctx->cfg->bit_flags.echo) {
                 char s[2] = {ch, '\0'};
                 cli_print_raw(ctx, s);
             }
