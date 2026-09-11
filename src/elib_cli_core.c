@@ -187,13 +187,11 @@ static void cli_tab_complete(elib_cli_ctx_t *ctx)
 
     /* Count matches and find last match */
     int match_count = 0;
-    int last_match = -1;
     int single_match = -1;
     for (uint8_t i = 0; i < ctx->cmd_count; i++) {
         const char *name = ctx->cfg->cmd_table[i].name;
         if (strncmp(name, rx, prefix_len) == 0) {
             match_count++;
-            last_match = i;
             single_match = (match_count == 1) ? i : -1;
         }
     }
